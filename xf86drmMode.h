@@ -471,7 +471,7 @@ extern int drmModeObjectSetProperty(int fd, uint32_t object_id,
 				    uint32_t object_type, uint32_t property_id,
 				    uint64_t value);
 
-
+#if 0
 typedef struct _drmModePropertySet drmModePropertySet, *drmModePropertySetPtr;
 
 extern drmModePropertySetPtr drmModePropertySetAlloc(void);
@@ -490,7 +490,26 @@ extern int drmModePropertySetCommit(int fd, uint32_t flags,
 				    void *user_data, drmModePropertySetPtr set);
 
 extern void drmModePropertySetFree(drmModePropertySetPtr set);
+#else
+typedef struct _drmModeAtomicReq drmModeAtomicReq, *drmModeAtomicReqPtr;
 
+extern drmModeAtomicReqPtr drmModeAtomicAlloc(void);
+extern int drmModeAtomicAddProperty(drmModeAtomicReqPtr req,
+				    uint32_t object_id,
+				    uint32_t property_id,
+				    uint64_t value);
+extern int drmModeAtomicCommit(int fd,
+			       drmModeAtomicReqPtr req,
+			       uint32_t flags,
+			       void *user_data);
+extern void drmModeAtomicFree(drmModeAtomicReqPtr req);
+
+extern int drmModeCreatePropertyBlob(int fd, const void *data, size_t size,
+				     uint32_t *id);
+
+extern int drmModeDestroyPropertyBlob(int fd, uint32_t id);
+
+#endif
 #if defined(__cplusplus) || defined(c_plusplus)
 }
 #endif

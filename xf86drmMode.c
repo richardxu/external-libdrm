@@ -1130,7 +1130,7 @@ int drmModeObjectSetProperty(int fd, uint32_t object_id, uint32_t object_type,
 
 	return DRM_IOCTL(fd, DRM_IOCTL_MODE_OBJ_SETPROPERTY, &prop);
 }
-
+#if 0
 typedef struct _drmModePropertySetItem drmModePropertySetItem, *drmModePropertySetItemPtr;
 
 struct _drmModePropertySetItem {
@@ -1399,3 +1399,222 @@ out:
 
 	return ret;
 }
+#else
+
+typedef struct _drmModeAtomicReqItem drmModeAtomicReqItem, *drmModeAtomicReqItemPtr;
+
+struct _drmModeAtomicReqItem {
+	uint32_t object_id;
+	uint32_t property_id;
+	uint64_t value;
+	drmModeAtomicReqItemPtr next;
+};
+
+struct _drmModeAtomicReq {
+	unsigned int count_objs;
+	unsigned int count_props;
+	drmModeAtomicReqItem list;
+};
+
+drmModeAtomicReqPtr drmModeAtomicAlloc(void)
+{
+	drmModeAtomicReqPtr req;
+
+	req = drmMalloc(sizeof *req);
+	if (!req)
+		return NULL;
+
+	req->list.next = NULL;
+	req->count_props = 0;
+	req->count_objs = 0;
+
+	return req;
+}
+
+int drmModeAtomicAddProperty(drmModeAtomicReqPtr req,
+			     uint32_t object_id,
+			     uint32_t property_id,
+			     uint64_t value)
+{
+	drmModeAtomicReqItemPtr prev = &req->list;
+	bool new_obj = false;
+
+	/* keep it sorted by object_id and property_id */
+	while (prev->next) {
+		if (prev->next->object_id > object_id)
+			break;
+
+		if (prev->next->object_id == object_id &&
+		    prev->next->property_id >= property_id)
+			break;
+
+		prev = prev->next;
+	}
+
+	if ((prev == &req->list || prev->object_id != object_id) &&
+	    (!prev->next || prev->next->object_id != object_id))
+		new_obj = true;
+
+	/* replace or add? */
+	if (prev->next &&
+	    prev->next->object_id == object_id &&
+	    prev->next->property_id == property_id) {
+		drmModeAtomicReqItemPtr item = prev->next;
+		item->value = value;
+	} else {
+		drmModeAtomicReqItemPtr item;
+
+		item = drmMalloc(sizeof *item);
+		if (!item)
+			return -1;
+
+		item->object_id = object_id;
+		item->property_id = property_id;
+		item->value = value;
+
+		item->next = prev->next;
+		prev->next = item;
+
+		req->count_props++;
+	}
+
+	if (new_obj)
+		req->count_objs++;
+
+	return 0;
+}
+
+void drmModeAtomicFree(drmModeAtomicReqPtr req)
+{
+	drmModeAtomicReqItemPtr item;
+
+	if (!req)
+		return;
+
+	item = req->list.next;
+
+	while (item) {
+		drmModeAtomicReqItemPtr next = item->next;
+
+		drmFree(item);
+
+		item = next;
+	}
+
+	drmFree(req);
+}
+
+int drmModeAtomicCommit(int fd, drmModeAtomicReqPtr req, uint32_t flags,
+			void *user_data)
+{
+	drmModeAtomicReqItemPtr item;
+	uint32_t *objs_ptr = NULL;
+	uint32_t *count_props_ptr = NULL;
+	uint32_t *props_ptr = NULL;
+	uint64_t *prop_values_ptr = NULL;
+	struct drm_mode_atomic atomic = { 0 };
+	unsigned int obj_idx = 0;
+	unsigned int prop_idx = 0;
+	int ret = -1;
+
+	if (!req)
+		return -1;
+
+	objs_ptr = drmMalloc(req->count_objs * sizeof objs_ptr[0]);
+	if (!objs_ptr) {
+		errno = ENOMEM;
+		goto out;
+	}
+
+	count_props_ptr = drmMalloc(req->count_objs * sizeof count_props_ptr[0]);
+	if (!count_props_ptr) {
+		errno = ENOMEM;
+		goto out;
+	}
+
+	props_ptr = drmMalloc(req->count_props * sizeof props_ptr[0]);
+	if (!props_ptr) {
+		errno = ENOMEM;
+		goto out;
+	}
+
+	prop_values_ptr = drmMalloc(req->count_props * sizeof prop_values_ptr[0]);
+	if (!prop_values_ptr) {
+		errno = ENOMEM;
+		goto out;
+	}
+
+	item = req->list.next;
+
+	while (item) {
+		int count_props = 0;
+		drmModeAtomicReqItemPtr next = item;
+
+		objs_ptr[obj_idx] = item->object_id;
+
+		while (next && next->object_id == item->object_id) {
+			props_ptr[prop_idx] = next->property_id;
+			prop_values_ptr[prop_idx] = next->value;
+			prop_idx++;
+
+			count_props++;
+
+			next = next->next;
+		}
+
+		count_props_ptr[obj_idx++] = count_props;
+
+		item = next;
+	}
+
+	atomic.count_objs = req->count_objs;
+	atomic.flags = flags;
+	atomic.objs_ptr = VOID2U64(objs_ptr);
+	atomic.count_props_ptr = VOID2U64(count_props_ptr);
+	atomic.props_ptr = VOID2U64(props_ptr);
+	atomic.prop_values_ptr = VOID2U64(prop_values_ptr);
+	atomic.user_data = VOID2U64(user_data);
+
+	ret = DRM_IOCTL(fd, DRM_IOCTL_MODE_ATOMIC, &atomic);
+
+out:
+	drmFree(objs_ptr);
+	drmFree(count_props_ptr);
+	drmFree(props_ptr);
+	drmFree(prop_values_ptr);
+
+	return ret;
+}
+
+int
+drmModeCreatePropertyBlob(int fd, const void *data, size_t length, uint32_t *id)
+{
+	struct drm_mode_create_blob create;
+	int ret;
+
+	if (length >= 0xffffffff)
+		return -ERANGE;
+
+	create.length = length;
+	create.data = (uintptr_t) data;
+	create.blob_id = 0;
+	*id = 0;
+
+	ret = DRM_IOCTL(fd, DRM_IOCTL_MODE_CREATEPROPBLOB, &create);
+	if (ret != 0)
+		return ret;
+
+	*id = create.blob_id;
+	return 0;
+}
+
+int
+drmModeDestroyPropertyBlob(int fd, uint32_t id)
+{
+	struct drm_mode_destroy_blob destroy;
+
+	destroy.blob_id = id;
+	return DRM_IOCTL(fd, DRM_IOCTL_MODE_DESTROYPROPBLOB, &destroy);
+}
+
+#endif
