@@ -362,6 +362,7 @@ struct drm_mode_fb_cmd2 {
 	__u32 handles[4];
 	__u32 pitches[4]; /* pitch for each plane */
 	__u32 offsets[4]; /* offset of each plane */
+        __u64 modifier[4]; /* ie, tiling, compressed (per plane) */
 };
 
 #define DRM_MODE_FB_DIRTY_ANNOTATE_COPY 0x01

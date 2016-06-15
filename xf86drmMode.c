@@ -282,6 +282,11 @@ int drmModeAddFB2(int fd, uint32_t width, uint32_t height,
 {
 	struct drm_mode_fb_cmd2 f;
 	int ret;
+	int i;
+	__u64 modifier[4];
+
+	for(i=0;i<4;i++)
+		modifier[i] = 0;
 
 	f.width  = width;
 	f.height = height;
@@ -290,6 +295,7 @@ int drmModeAddFB2(int fd, uint32_t width, uint32_t height,
 	memcpy(f.handles, bo_handles, 4 * sizeof(bo_handles[0]));
 	memcpy(f.pitches, pitches, 4 * sizeof(pitches[0]));
 	memcpy(f.offsets, offsets, 4 * sizeof(offsets[0]));
+	memcpy(f.modifier, modifier, 4 * sizeof(modifier[0]));
 
 	if ((ret = DRM_IOCTL(fd, DRM_IOCTL_MODE_ADDFB2, &f)))
 		return ret;
