@@ -60,6 +60,7 @@ SUBDIRS := \
 	rockchip \
 	tegra \
 	libkms \
+	tests/modetest
 
 mkfiles := $(patsubst %,$(LOCAL_PATH)/%/Android.mk,$(SUBDIRS))
 include $(mkfiles)
