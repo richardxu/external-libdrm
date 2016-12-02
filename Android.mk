@@ -22,7 +22,6 @@
 #
 
 LOCAL_PATH := $(call my-dir)
-
 # Import variables LIBDRM_{,H_,INCLUDE_H_,INCLUDE_VMWGFX_H_}FILES
 include $(LOCAL_PATH)/Makefile.sources
 
