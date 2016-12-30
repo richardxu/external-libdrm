@@ -390,9 +390,9 @@ struct drm_mode_fb_cmd2 {
 	 *   followed by an interleaved U/V plane containing
 	 *   8 bit 2x2 subsampled colour difference samples.
 	 *
-	 * So it would consist of Y as offsets[0] and UV as
-	 * offsets[1].  Note that offsets[0] will generally
-	 * be 0 (but this is not required).
+	 * So it would consist of Y as offset[0] and UV as
+	 * offset[1].  Note that offset[0] will generally
+	 * be 0.
 	 *
 	 * To accommodate tiled, compressed, etc formats, a per-plane
 	 * modifier can be specified.  The default value of zero
@@ -587,9 +587,9 @@ struct drm_mode_destroy_dumb {
 };
 
 /* page-flip flags are valid, plus: */
-#define DRM_MODE_ATOMIC_TEST_ONLY 0x0100
-#define DRM_MODE_ATOMIC_NONBLOCK  0x0200
-#define DRM_MODE_ATOMIC_ALLOW_MODESET 0x0400
+#define DRM_MODE_ATOMIC_TEST_ONLY	0x0100
+#define DRM_MODE_ATOMIC_NONBLOCK	0x0200
+#define DRM_MODE_ATOMIC_ALLOW_MODESET	0x0400
 
 #define DRM_MODE_ATOMIC_FLAGS (\
 		DRM_MODE_PAGE_FLIP_EVENT |\
@@ -628,5 +628,6 @@ struct drm_mode_create_blob {
 struct drm_mode_destroy_blob {
 	__u32 blob_id;
 };
+
 
 #endif

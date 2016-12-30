@@ -33,14 +33,7 @@ LOCAL_SHARED_LIBRARIES := libdrm
 
 LOCAL_SRC_FILES := $(filter-out %.h,$(LIBDRM_INTEL_FILES))
 
-LOCAL_C_INCLUDES := \
-	external/libpciaccess/include
-
 LOCAL_CFLAGS := \
 	-DHAVE_LIBDRM_ATOMIC_PRIMITIVES=1
-
-LOCAL_SHARED_LIBRARIES := \
-	libdrm \
-	libpciaccess
 
 include $(BUILD_SHARED_LIBRARY)

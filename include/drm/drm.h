@@ -642,6 +642,13 @@ struct drm_get_cap {
  */
 #define DRM_CLIENT_CAP_ATOMIC	3
 
+/**
+ * DRM_CLIENT_CAP_ATOMIC
+ *
+ * If set to 1, the DRM core will allow atomic modesetting requests.
+ */
+#define DRM_CLIENT_CAP_ATOMIC		3
+
 /** DRM_IOCTL_SET_CLIENT_CAP ioctl argument type */
 struct drm_set_client_cap {
 	__u64 capability;
@@ -816,7 +823,6 @@ struct drm_event_vblank {
 #define DRM_CAP_PRIME 0x5
 #define DRM_CAP_TIMESTAMP_MONOTONIC 0x6
 #define DRM_CAP_ASYNC_PAGE_FLIP 0x7
-#define DRM_CAP_ATOMIC 0xa
 #define DRM_CAP_ADDFB2_MODIFIERS	0x10
 
 #define DRM_PRIME_CAP_IMPORT 0x1

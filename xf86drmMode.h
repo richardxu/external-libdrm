@@ -36,7 +36,7 @@
 #ifndef _XF86DRMMODE_H_
 #define _XF86DRMMODE_H_
 
-#if defined(__cplusplus) || defined(c_plusplus)
+#if defined(__cplusplus)
 extern "C" {
 #endif
 
@@ -241,7 +241,7 @@ typedef struct _drmModeProperty {
 	uint32_t *blob_ids; /* store the blob IDs */
 } drmModePropertyRes, *drmModePropertyPtr;
 
-static inline uint32_t drm_property_type_is(drmModePropertyPtr property,
+static __inline int drm_property_type_is(drmModePropertyPtr property,
 		uint32_t type)
 {
 	/* instanceof for props.. handles extended type vs original types: */
@@ -428,10 +428,23 @@ drmModeEncoderPtr drmModeGetEncoder(int fd, uint32_t encoder_id);
  */
 
 /**
- * Retrive information about the connector connectorId.
+ * Retrieve all information about the connector connectorId. This will do a
+ * forced probe on the connector to retrieve remote information such as EDIDs
+ * from the display device.
  */
 extern drmModeConnectorPtr drmModeGetConnector(int fd,
-		uint32_t connectorId);
+					       uint32_t connectorId);
+
+/**
+ * Retrieve current information, i.e the currently active mode and encoder,
+ * about the connector connectorId. This will not do any probing on the
+ * connector or remote device, and only reports what is currently known.
+ * For the complete set of modes and encoders associated with the connector
+ * use drmModeGetConnector() which will do a probe to determine any display
+ * link changes first.
+ */
+extern drmModeConnectorPtr drmModeGetConnectorCurrent(int fd,
+						      uint32_t connector_id);
 
 /**
  * Attaches the given mode to an connector.
@@ -477,7 +490,6 @@ extern int drmModeObjectSetProperty(int fd, uint32_t object_id,
 				    uint32_t object_type, uint32_t property_id,
 				    uint64_t value);
 
-#if 0
 typedef struct _drmModePropertySet drmModePropertySet, *drmModePropertySetPtr;
 
 extern drmModePropertySetPtr drmModePropertySetAlloc(void);
@@ -496,10 +508,17 @@ extern int drmModePropertySetCommit(int fd, uint32_t flags,
 				    void *user_data, drmModePropertySetPtr set);
 
 extern void drmModePropertySetFree(drmModePropertySetPtr set);
-#else
+typedef struct _drmModeAtomicReq drmModeAtomicReq, *drmModeAtomicReqPtr;
+
 typedef struct _drmModeAtomicReq drmModeAtomicReq, *drmModeAtomicReqPtr;
 
 extern drmModeAtomicReqPtr drmModeAtomicAlloc(void);
+extern drmModeAtomicReqPtr drmModeAtomicDuplicate(drmModeAtomicReqPtr req);
+extern int drmModeAtomicMerge(drmModeAtomicReqPtr base,
+			      drmModeAtomicReqPtr augment);
+extern void drmModeAtomicFree(drmModeAtomicReqPtr req);
+extern int drmModeAtomicGetCursor(drmModeAtomicReqPtr req);
+extern void drmModeAtomicSetCursor(drmModeAtomicReqPtr req, int cursor);
 extern int drmModeAtomicAddProperty(drmModeAtomicReqPtr req,
 				    uint32_t object_id,
 				    uint32_t property_id,
@@ -508,15 +527,13 @@ extern int drmModeAtomicCommit(int fd,
 			       drmModeAtomicReqPtr req,
 			       uint32_t flags,
 			       void *user_data);
-extern void drmModeAtomicFree(drmModeAtomicReqPtr req);
 
 extern int drmModeCreatePropertyBlob(int fd, const void *data, size_t size,
 				     uint32_t *id);
-
 extern int drmModeDestroyPropertyBlob(int fd, uint32_t id);
 
-#endif
-#if defined(__cplusplus) || defined(c_plusplus)
+
+#if defined(__cplusplus)
 }
 #endif
 
