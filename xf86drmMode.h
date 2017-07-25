@@ -508,7 +508,6 @@ extern int drmModePropertySetCommit(int fd, uint32_t flags,
 				    void *user_data, drmModePropertySetPtr set);
 
 extern void drmModePropertySetFree(drmModePropertySetPtr set);
-typedef struct _drmModeAtomicReq drmModeAtomicReq, *drmModeAtomicReqPtr;
 
 typedef struct _drmModeAtomicReq drmModeAtomicReq, *drmModeAtomicReqPtr;
 
